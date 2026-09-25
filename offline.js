@@ -65,6 +65,7 @@
 
     handleClientMsg(msg) {
       switch (msg.type) {
+        case "create_room":
         case "join_room": {
           this.playerName = msg.name || this.playerName;
           this.emit({
