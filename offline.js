@@ -83,11 +83,7 @@
         const res = await origFetch(`${REMOTE_HTTP}/api/highscores`, options);
         if (res.ok) return res;
       } catch (e) {}
-      return new Response(JSON.stringify([
-        { wave: 52, names: ["Luna", "Vicente"], mode: "endless", mapId: "sendero", difficulty: "hard" },
-        { wave: 44, names: ["Carlos"], mode: "endless", mapId: "tenazas", difficulty: "hard" },
-        { wave: 38, names: ["Luna"], mode: "endless", mapId: "espiral", difficulty: "hard" }
-      ]), {
+      return new Response(JSON.stringify([]), {
         status: 200,
         headers: { "content-type": "application/json" }
       });
@@ -99,12 +95,7 @@
         const res = await origFetch(`${REMOTE_HTTP}${urlStr}`, options);
         if (res.ok) return res;
       } catch (e) {}
-      return new Response(JSON.stringify([
-        { rank: 1, name: "Luna", badge: { tier: 5, label: "Maestro" }, games: "24 partidas" },
-        { rank: 2, name: "Carlos", badge: { tier: 4, label: "Diamante" }, games: "19 partidas" },
-        { rank: 3, name: "Vicente", badge: { tier: 3, label: "Oro" }, games: "15 partidas" },
-        { rank: 4, name: "Mariana", badge: { tier: 2, label: "Plata" }, games: "12 partidas" }
-      ]), {
+      return new Response(JSON.stringify([]), {
         status: 200,
         headers: { "content-type": "application/json" }
       });
@@ -542,33 +533,11 @@
   window._NativeWebSocket = window.WebSocket;
   window.WebSocket = MultiplayerWebSocket;
 
-  // Inicializar muestra de repeticiones en localStorage si está vacío
+  // Limpiar cualquier repetición de prueba anterior
   try {
     const existing = localStorage.getItem("td_replays");
-    if (!existing || JSON.parse(existing).length === 0) {
-      localStorage.setItem("td_replays", JSON.stringify([
-        {
-          id: "demo-partida-1",
-          date: new Date().toISOString(),
-          mapId: "sendero",
-          victory: true,
-          wave: 36,
-          data: {
-            v: 21,
-            mapId: "sendero",
-            mode: "classic",
-            difficulty: "normal",
-            turbo: false,
-            seed: 482910,
-            players: [{ id: "p1", name: "Defensor", color: "#38bdf8", door: 0 }],
-            closedDoors: [],
-            log: [],
-            wave: 36,
-            victory: true,
-            ticks: 5400
-          }
-        }
-      ]));
+    if (existing && existing.includes("demo-partida-1")) {
+      localStorage.removeItem("td_replays");
     }
   } catch(e) {}
 
