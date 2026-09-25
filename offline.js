@@ -2,6 +2,15 @@
 (function() {
   console.log("🎮 Inicializando modo local offline de Fortaleza-TD...");
 
+  function generateRoomCode() {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+    let code = "";
+    for (let i = 0; i < 4; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+  }
+
   // 1. Mock fetch endpoints
   const origFetch = window.fetch;
   window.fetch = async function(url, options = {}) {
@@ -10,7 +19,8 @@
       return new Response(JSON.stringify({ sitekey: "" }), { status: 200, headers: { "content-type": "application/json" } });
     }
     if (urlStr.includes("/api/rooms/new")) {
-      return new Response(JSON.stringify({ code: "SOLO" }), { status: 200, headers: { "content-type": "application/json" } });
+      const code = generateRoomCode();
+      return new Response(JSON.stringify({ code }), { status: 200, headers: { "content-type": "application/json" } });
     }
     if (urlStr.includes("/api/rooms")) {
       return new Response(JSON.stringify([]), { status: 200, headers: { "content-type": "application/json" } });
@@ -47,6 +57,13 @@
       this.door = 0;
       this.playerName = localStorage.getItem("td_name") || "Luna";
 
+      let codeFromUrl = "";
+      try {
+        const u = new URL(url, location.origin);
+        codeFromUrl = u.searchParams.get("code") || "";
+      } catch {}
+      this.roomCode = (codeFromUrl && codeFromUrl.length === 4) ? codeFromUrl.toUpperCase() : generateRoomCode();
+
       setTimeout(() => {
         this.readyState = 1; // OPEN
         if (this.onopen) this.onopen({ type: "open" });
@@ -71,7 +88,8 @@
         case "create_room":
         case "join_room": {
           this.playerName = msg.name || this.playerName;
-          const roomCode = msg.code || "SOLO";
+          const roomCode = msg.code || this.roomCode || generateRoomCode();
+          this.roomCode = roomCode;
           this.emit({
             type: "room_joined",
             playerId: "p1",
