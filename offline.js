@@ -18,6 +18,9 @@
     if (urlStr.includes("/api/highscores")) {
       return new Response(JSON.stringify([]), { status: 200, headers: { "content-type": "application/json" } });
     }
+    if (urlStr.includes("/api/ladder")) {
+      return new Response(JSON.stringify({ ok: true, ladder: [], results: [] }), { status: 200, headers: { "content-type": "application/json" } });
+    }
     return origFetch.apply(this, arguments);
   };
 
@@ -42,7 +45,7 @@
         closedDoors: []
       };
       this.door = 0;
-      this.playerName = localStorage.getItem("td_name") || "Jogador";
+      this.playerName = localStorage.getItem("td_name") || "Luna";
 
       setTimeout(() => {
         this.readyState = 1; // OPEN
@@ -68,10 +71,11 @@
         case "create_room":
         case "join_room": {
           this.playerName = msg.name || this.playerName;
+          const roomCode = msg.code || "SOLO";
           this.emit({
             type: "room_joined",
             playerId: "p1",
-            code: "SOLO",
+            code: roomCode,
             isHost: true,
             spectator: false
           });
@@ -243,11 +247,45 @@
   // Override WebSocket in window
   window.WebSocket = LocalWebSocket;
 
-  // Auto-selecionar visibilidade na tela inicial
-  window.addEventListener("DOMContentLoaded", () => {
-    setTimeout(() => {
-      const pubBtn = document.querySelector('#home-visibility button[data-value="public"]');
-      if (pubBtn) pubBtn.click();
-    }, 200);
-  });
+  // Auto-selecionar nome e visibilidade na tela inicial para permitir criar sala imediatamente
+  function ensureReadyToPlay() {
+    const nameInput = document.getElementById("home-name");
+    if (nameInput) {
+      if (!nameInput.value || !nameInput.value.trim()) {
+        const stored = localStorage.getItem("td_name");
+        nameInput.value = stored || "Luna";
+        nameInput.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+    }
+
+    const pubBtn = document.querySelector('#home-visibility button[data-value="public"]');
+    if (pubBtn && !pubBtn.classList.contains("active")) {
+      pubBtn.click();
+    }
+
+    const btnCreate = document.getElementById("btn-create");
+    if (btnCreate && btnCreate.disabled) {
+      btnCreate.disabled = false;
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => {
+      ensureReadyToPlay();
+      setTimeout(ensureReadyToPlay, 100);
+      setTimeout(ensureReadyToPlay, 300);
+    });
+  } else {
+    ensureReadyToPlay();
+    setTimeout(ensureReadyToPlay, 100);
+    setTimeout(ensureReadyToPlay, 300);
+  }
+
+  // Intercept click to guarantee ready state before game click handlers run
+  document.addEventListener("click", (e) => {
+    const btn = e.target && e.target.closest ? e.target.closest("#btn-create, #btn-join") : null;
+    if (btn) {
+      ensureReadyToPlay();
+    }
+  }, true);
 })();
