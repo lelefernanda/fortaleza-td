@@ -1,0 +1,14 @@
+{
+  "name": "Fortaleza — Tower Defense Cooperativo",
+  "short_name": "Fortaleza",
+  "description": "Tower defense cooperativo en tiempo real: defiendan juntos la fortaleza.",
+  "start_url": "/",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#0c101a",
+  "theme_color": "#0c101a",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

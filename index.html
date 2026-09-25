@@ -1,0 +1,514 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#0c101a" />
+  <title>Fortaleza — Tower Defense Cooperativo</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏰</text></svg>" />
+  <!-- PWA: instalable ("Añadir a pantalla de inicio") → se juega A PANTALLA
+       COMPLETA, sin la barra del navegador que se come ~15% en móvil -->
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <script src="/offline.js"></script>
+  <script type="module" crossorigin src="/assets/index-Xrl72209.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-B-g0k1x1.css">
+</head>
+<body>
+  <div id="app">
+    <div class="bg-decor" aria-hidden="true"></div>
+
+    <!-- ============ PANTALLA: INICIO ============ -->
+    <!-- Rediseño moderno en CSS puro: paleta neutra zinc + UN acento ámbar
+         reservado al CTA y a los récords (ver tokens --h-* en style.css,
+         todos scopeados bajo #screen-home para no tocar lobby/HUD). Los
+         iconos de línea son SVG inline (sin fuentes/recursos externos, ver
+         regla de CSP de Discord) menos donde el contenido lo pinta screens.ts
+         / replay.ts (listas de salas, récords, repeticiones): esos siguen
+         llevando su emoji de siempre porque viven en TypeScript. -->
+    <section id="screen-home" class="screen">
+      <div class="home-wrap">
+      <header class="home-hero">
+        <p class="home-eyebrow"><span class="home-eyebrow-dot" aria-hidden="true"></span>Tower defense cooperativo</p>
+        <h1 class="logo"><span class="logo-icon" aria-hidden="true">🏰</span><span class="logo-text">Fortaleza</span></h1>
+        <p class="tagline">Defiendan la fortaleza en equipo, en tiempo real.</p>
+        <ul class="hero-meta">
+          <li><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8.5" r="3.2"/><path d="M2.8 19.5v-.8a5 5 0 0 1 5-5h2.4a5 5 0 0 1 5 5v.8"/><path d="M16.2 4a3.2 3.2 0 0 1 0 6.3"/><path d="M18.3 14a4.6 4.6 0 0 1 2.9 4.3v1.2"/></svg>Co-op en vivo</li>
+          <li><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4.2 3.5 6v13.8L9 18l6 2 5.5-1.8V4.4L15 6.2 9 4.2Z"/><path d="M9 4.2v13.8M15 6.2V20"/></svg>9 mapas</li>
+          <li><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 8.5 4.6-8.5 4.6-8.5-4.6L12 3Z"/><path d="m3.5 12.4 8.5 4.6 8.5-4.6"/></svg>3 modos</li>
+          <li><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.2 12S6 5.8 12 5.8 21.8 12 21.8 12 18 18.2 12 18.2 2.2 12 2.2 12Z"/><circle cx="12" cy="12" r="3"/></svg>Modo espectador</li>
+        </ul>
+      </header>
+
+      <div class="home-cols">
+      <div class="home-card panel">
+        <div class="card-head">
+          <h2 class="card-title">Jugar</h2>
+          <p class="card-desc">Crea una sala nueva o entra con el código de un amigo.</p>
+        </div>
+
+        <label class="field">
+          <span>Tu nombre</span>
+          <input id="home-name" type="text" maxlength="16" placeholder="Ej: Vicente" autocomplete="off" />
+        </label>
+
+        <div class="home-tabs">
+          <button id="tab-create" class="tab active">Crear sala</button>
+          <button id="tab-join" class="tab">Unirse</button>
+        </div>
+
+        <!-- Crear pide DOS decisiones: nombre y visibilidad (sin valor por defecto
+             a propósito — que sea una elección consciente). El mapa, el modo y la
+             dificultad se eligen DENTRO de la sala, con los amigos ya entrando. -->
+        <div id="home-create" class="home-tabpanel">
+          <span class="field-label">Visibilidad de la sala</span>
+          <div id="home-visibility" class="seg">
+            <button data-value="private" type="button"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="11" width="15" height="9" rx="2.2"/><path d="M8 11V7.5a4 4 0 0 1 8 0V11"/></svg>Privada<small>solo con el código</small></button>
+            <button data-value="public" type="button"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M3.7 12h16.6M12 3.5c2.3 2.4 2.3 14.6 0 17M12 3.5c-2.3 2.4-2.3 14.6 0 17"/></svg>Pública<small>abierta en la lista</small></button>
+          </div>
+          <button id="btn-create" class="btn primary big" disabled>Crear sala</button>
+          <p id="create-hint" class="hint create-hint">Ponte un nombre y elige la visibilidad para crear la sala.</p>
+        </div>
+
+        <div id="home-join" class="home-tabpanel" hidden>
+          <label class="field"><span>Código de sala</span>
+            <input id="home-code" type="text" maxlength="4" placeholder="ABCD" autocomplete="off" class="code-input" />
+          </label>
+          <button id="btn-join" class="btn primary big">Unirse a la sala</button>
+        </div>
+
+        <p id="home-error" class="error" hidden></p>
+      </div>
+
+      <aside class="home-side panel">
+        <!-- pestañas del panel lateral: UNA sección visible a la vez (antes se
+             apilaban las tres siempre, tapando todo de un vistazo — feedback
+             directo). Mismo lenguaje visual que el segmentado Crear sala/Unirse
+             de la izquierda (clases .home-tabs/.tab compartidas). El estado de
+             "hay datos o no" ahora vive DENTRO de cada panel (estado vacío
+             propio); dejó de controlar si la sección se muestra. -->
+        <div id="home-side-tabs" class="home-tabs side-tabs" role="tablist" aria-label="Panel lateral">
+          <button id="side-tab-rooms" class="tab active" type="button" role="tab" aria-selected="true" aria-controls="home-rooms"><span class="live-dot" aria-hidden="true"></span>Salas<span id="side-tab-rooms-count" class="tab-count" hidden>0</span></button>
+          <button id="side-tab-scores" class="tab" type="button" role="tab" aria-selected="false" aria-controls="home-scores" tabindex="-1">Récords<span id="side-tab-scores-count" class="tab-count" hidden>0</span></button>
+          <button id="side-tab-replays" class="tab" type="button" role="tab" aria-selected="false" aria-controls="home-replays" tabindex="-1">Repeticiones<span id="side-tab-replays-count" class="tab-count" hidden>0</span></button>
+          <button id="side-tab-ladder" class="tab" type="button" role="tab" aria-selected="false" aria-controls="home-ladder" tabindex="-1">Ranking<span id="side-tab-ladder-count" class="tab-count" hidden>0</span></button>
+        </div>
+
+        <div id="home-rooms" class="rooms home-tabpanel" role="tabpanel" aria-labelledby="side-tab-rooms">
+          <ul id="home-rooms-list" class="room-list"></ul>
+          <p id="home-rooms-empty" class="hint side-empty">No hay salas públicas ahora mismo.<br>Crea la primera: elige «Pública» al crear tu sala y aparecerá aquí para que otros entren a jugar o a mirar.</p>
+        </div>
+
+        <div id="home-scores" class="scores home-tabpanel" role="tabpanel" aria-labelledby="side-tab-scores" hidden>
+          <p class="side-panel-meta">Infinito · Horda</p>
+          <ol id="home-scores-list"></ol>
+          <p id="home-scores-empty" class="hint side-empty">Aún no hay récords. Se registran en Infinito y Horda.</p>
+        </div>
+
+        <div id="home-replays" class="replays home-tabpanel" role="tabpanel" aria-labelledby="side-tab-replays" hidden>
+          <ul id="home-replays-list" class="replay-list"></ul>
+          <p id="home-replays-empty" class="hint side-empty">No hay repeticiones guardadas en este dispositivo.</p>
+        </div>
+
+        <!-- LADDER de arena: la clasificación por rango. Solo salen los que ya
+             calibraron (10 partidas); antes de eso el número no significa nada. -->
+        <div id="home-ladder" class="ladder home-tabpanel" role="tabpanel" aria-labelledby="side-tab-ladder" hidden>
+          <p class="side-panel-meta">Arena ⚔️ · por rango</p>
+          <ol id="home-ladder-list" class="ladder-list"></ol>
+          <p id="home-ladder-empty" class="hint side-empty">Todavía no hay nadie clasificado. Se entra tras 10 arenas públicas con al menos tres jugadores.</p>
+        </div>
+        <!-- acciones secundarias: lado a lado y ancladas abajo para que la
+             columna derecha no quede con aire muerto bajo el panel activo -->
+        <div class="home-side-actions">
+          <button id="btn-load-save" class="btn ghost small" title="Continuar partida guardada"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 12.5v5a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-5"/><path d="M12 3.5v10.8M8.3 10.8 12 14.5l3.7-3.7"/></svg>Continuar</button>
+          <button id="btn-load-replay" class="btn ghost small" title="Cargar repetición"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 6.8a1.8 1.8 0 0 1 1.8-1.8h3.6l1.8 2h8a1.8 1.8 0 0 1 1.8 1.8v8.4a1.8 1.8 0 0 1-1.8 1.8H5.3a1.8 1.8 0 0 1-1.8-1.8V6.8Z"/></svg>Repetición</button>
+          <button id="btn-bestiary" class="btn ghost small" title="Guía del juego"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 6.3C10.3 4.8 7.6 4 3.7 4v14.8c3.9 0 6.6.8 8.3 2.3 1.7-1.5 4.4-2.3 8.3-2.3V4c-3.9 0-6.6.8-8.3 2.3Z"/><path d="M12 6.3v14.8"/></svg>Guía</button>
+        </div>
+        <input id="replay-file" type="file" accept="application/json,.json" hidden />
+        <input id="save-file" type="file" accept="application/json,.json" hidden />
+      </aside>
+      </div>
+      <!-- legal: la verificación de la app de Discord exige estos enlaces públicos -->
+      <footer class="home-legal">
+        <a href="/terminos.html">Condiciones del Servicio</a> · <a href="/privacidad.html">Política de Privacidad</a>
+      </footer>
+      </div>
+    </section>
+
+    <!-- ============ PANTALLA: LOBBY ============ -->
+    <!-- Tres zonas en escritorio (equipo+chat · mapa · ajustes+CTA) repartidas
+         con grid-areas para que TODO quepa sin scroll a 1366×768; en pantallas
+         medianas y en móvil las áreas se reapilan (ver style.css). Mismo
+         lenguaje visual que #screen-home (tokens --h-* compartidos, iconos de
+         línea SVG inline): las listas que pinta screens.ts (jugadores,
+         espectadores, chat) conservan su emoji, solo se restilizan por CSS. -->
+    <section id="screen-lobby" class="screen" hidden>
+      <div class="lobby-card panel">
+        <header class="lobby-head">
+          <div class="lobby-head-text">
+            <h2>Sala</h2>
+            <p class="hint">Comparte el código o el enlace para que entren los demás</p>
+          </div>
+          <!-- el ícono de copiar vive FUERA de #lobby-code a propósito: screens.ts
+               hace textContent = código/¡Copiado!/código en ese botón, y un hijo
+               SVG se borraría en cada render (ver comentario en style.css) -->
+          <span class="code-chip-wrap">
+            <button id="lobby-code" class="code-chip" type="button" title="Copiar enlace">----</button>
+            <svg class="i code-chip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8.6" y="8.6" width="10.9" height="10.9" rx="2.2"/><path d="M15 8.6V6.8A2.3 2.3 0 0 0 12.7 4.5H6.8A2.3 2.3 0 0 0 4.5 6.8v5.9a2.3 2.3 0 0 0 2.3 2.3H8.6"/></svg>
+          </span>
+        </header>
+
+        <!-- issue #12 · banner de una partida CARGADA (guardado): mapa, oleada y
+             nº de defensores. Solo visible en el lobby de reanudación. -->
+        <div id="lobby-saved-banner" class="saved-banner" hidden></div>
+
+        <div class="lobby-cols">
+          <div class="lobby-box lobby-players-box">
+            <h3 id="lobby-players-title">Jugadores</h3>
+            <ul id="lobby-players" class="player-list"></ul>
+            <div id="lobby-spectators-box" hidden>
+              <h3><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.2 12S6 5.8 12 5.8 21.8 12 21.8 12 18 18.2 12 18.2 2.2 12 2.2 12Z"/><circle cx="12" cy="12" r="3"/></svg>Espectadores</h3>
+              <ul id="lobby-spectators" class="player-list"></ul>
+            </div>
+            <!-- issue #12 · slots reclamables del guardado (reemplaza la lista de
+                 jugadores en el lobby de reanudación) -->
+            <ul id="lobby-slots" class="player-list" hidden></ul>
+            <p id="lobby-slots-hint" class="hint" hidden>Adopta un defensor libre para controlarlo, o entra de espectador cuando empiece.</p>
+          </div>
+
+          <div class="lobby-box lobby-maps-box" id="lobby-maps-box">
+            <h3><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4.2 3.5 6v13.8L9 18l6 2 5.5-1.8V4.4L15 6.2 9 4.2Z"/><path d="M9 4.2v13.8M15 6.2V20"/></svg>Mapa</h3>
+            <div id="lobby-maps" class="map-grid"></div>
+            <p id="lobby-map-desc" class="hint map-desc"></p>
+            <!-- F9b · selección de puerta por color (solo mapas multi-ruta ≥4).
+                 Cada jugador reclama UNA puerta; en partida su spawn luce un
+                 estandarte de su color. Opcional y social (no limita construcción). -->
+            <div id="lobby-doors-box" hidden>
+              <h4 class="lobby-doors-title">🚩 Tu puerta</h4>
+              <!-- mapa de puertas: cada puerta numerada (como los chips) y teñida
+                   del color de quien la reclamó — así se VE dónde aparecerás.
+                   Interactivo: tocar una puerta la reclama/libera. -->
+              <canvas id="lobby-doors-map" class="doors-map" aria-label="Mapa de puertas: toca una puerta libre para reclamarla, o la tuya para liberarla"></canvas>
+              <ul id="lobby-doors" class="door-list"></ul>
+              <p class="hint">Reclama una puerta para plantar tu estandarte en su entrada y saber por dónde te atacarán. Es opcional y social: no limita dónde construyes.</p>
+            </div>
+          </div>
+
+          <div class="lobby-box lobby-settings-box">
+            <div id="lobby-settings-fields">
+              <h3>Modo</h3>
+              <div id="lobby-mode" class="seg">
+                <button data-value="classic" type="button"><span class="seg-row"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.3 19 6v5.6c0 4.8-3 8.3-7 9.3-4-1-7-4.5-7-9.3V6l7-2.7Z"/></svg>Clásico</span><small>36 oleadas</small></button>
+                <button data-value="endless" type="button"><span class="seg-row"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 12c-1.7-2.8-3.2-4.2-5.2-4.2a4.2 4.2 0 0 0 0 8.4c2 0 3.5-1.4 5.2-4.2Zm0 0c1.7 2.8 3.2 4.2 5.2 4.2a4.2 4.2 0 0 0 0-8.4c-2 0-3.5 1.4-5.2 4.2Z"/></svg>Infinito</span><small>récords</small></button>
+                <button data-value="horde" type="button"><span class="seg-row"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M12 12a2.3 2.3 0 1 0 2.3 2.3"/><path d="M12 12a5 5 0 1 0 5 5"/><path d="M12 12a7.8 7.8 0 1 1-7.8 7.8"/></svg>Horda</span><small>récords</small></button>
+                <button data-value="arena" type="button"><span class="seg-row"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="4.5" width="7" height="6" rx="1"/><rect x="13.5" y="4.5" width="7" height="6" rx="1"/><rect x="3.5" y="13.5" width="7" height="6" rx="1"/><rect x="13.5" y="13.5" width="7" height="6" rx="1"/></svg>Arena</span><small>compites</small><span class="beta-tag">beta</span></button>
+              </div>
+              <h3>Dificultad</h3>
+              <div id="lobby-diff" class="seg">
+                <button data-value="easy" type="button"><span class="seg-row"><svg class="i" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4.5" y="14" width="3.6" height="6" rx="1" fill="currentColor"/><rect x="10.2" y="10" width="3.6" height="10" rx="1" fill="currentColor" fill-opacity=".3"/><rect x="15.9" y="6" width="3.6" height="14" rx="1" fill="currentColor" fill-opacity=".3"/></svg>Fácil</span></button>
+                <button data-value="normal" type="button"><span class="seg-row"><svg class="i" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4.5" y="14" width="3.6" height="6" rx="1" fill="currentColor"/><rect x="10.2" y="10" width="3.6" height="10" rx="1" fill="currentColor"/><rect x="15.9" y="6" width="3.6" height="14" rx="1" fill="currentColor" fill-opacity=".3"/></svg>Normal</span></button>
+                <button data-value="hard" type="button"><span class="seg-row"><svg class="i" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4.5" y="14" width="3.6" height="6" rx="1" fill="currentColor"/><rect x="10.2" y="10" width="3.6" height="10" rx="1" fill="currentColor"/><rect x="15.9" y="6" width="3.6" height="14" rx="1" fill="currentColor"/></svg>Difícil</span></button>
+              </div>
+              <h3>Visibilidad</h3>
+              <div id="lobby-visibility" class="seg">
+                <button data-value="private" type="button"><span class="seg-row"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="11" width="15" height="9" rx="2.2"/><path d="M8 11V7.5a4 4 0 0 1 8 0V11"/></svg>Privada</span><small>solo con el código</small></button>
+                <button data-value="public" type="button"><span class="seg-row"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M3.7 12h16.6M12 3.5c2.3 2.4 2.3 14.6 0 17M12 3.5c-2.3 2.4-2.3 14.6 0 17"/></svg>Pública</span><small>aparece en la lista</small></button>
+              </div>
+              <!-- MODO TURBO ⚡ (issue #14): solo clásico/infinito; en horda se
+                   deshabilita (ver renderLobby). Mismo patrón de segs que los demás. -->
+              <div id="lobby-turbo-box">
+                <h3>Turbo</h3>
+                <div id="lobby-turbo" class="seg">
+                  <button data-value="off" type="button"><span class="seg-row"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.3"/><path d="M12 7.6V12l3 2.1"/></svg>Normal</span></button>
+                  <button data-value="on" type="button"><span class="seg-row"><svg class="i" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><path d="M13.2 2.8 5.6 13.6a.6.6 0 0 0 .5 1h4.9l-1.1 6.6a.6.6 0 0 0 1.1.5l7.6-10.8a.6.6 0 0 0-.5-1h-4.9l1.1-6.6a.6.6 0 0 0-1.1-.5Z"/></svg>Turbo</span></button>
+                </div>
+                <p id="lobby-turbo-hint" class="hint">Economía ×1.75, madera ×1.5, interludios a la mitad. Mismo reto, la mitad de tiempo. Sin récords.</p>
+              </div>
+            </div>
+
+            <button id="btn-start" class="btn primary big">▶ ¡Empezar partida!</button>
+            <button id="btn-ready" class="btn primary big" hidden>✅ Estoy listo</button>
+            <p id="lobby-ready-status" class="hint" hidden></p>
+            <p id="lobby-wait" class="hint" hidden>Esperando a que el anfitrión inicie…</p>
+            <p id="lobby-spectating" class="hint" hidden>👁 Estás en la zona de espectadores — el anfitrión puede traerte de vuelta como jugador.</p>
+            <button id="btn-leave" class="btn ghost">Salir de la sala</button>
+          </div>
+
+          <div class="lobby-box lobby-chat-box">
+            <h3>Chat</h3>
+            <div id="lobby-chat" class="chat-log"></div>
+            <form id="lobby-chat-form" class="chat-form">
+              <input id="lobby-chat-input" type="text" maxlength="200" placeholder="Escribe un mensaje…" autocomplete="off" />
+              <button class="btn small" type="submit">Enviar</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ PANTALLA: JUEGO ============ -->
+    <section id="screen-game" class="screen" hidden>
+      <canvas id="game-canvas"></canvas>
+      <!-- viñeta de encuadre (INMERSIVO MINIMAL): div inerte propio, NO el canvas,
+           insertado justo encima de él en el DOM para heredar su z-index:auto de
+           forma natural (pinta por encima del lienzo y por debajo de todo el HUD,
+           que viene después) sin tocar renderer.ts ni pelear con z-index manual.
+           El propio canvas YA dibuja su viñeta de juego (contraste); esta es solo
+           el marco del VIEWPORT, constante pase lo que pase con cámara/zoom. -->
+      <div class="hud-vignette" aria-hidden="true"></div>
+
+      <div id="hud-top">
+        <div class="hud-group">
+          <span id="hud-lives" class="stat">❤️ 20</span>
+          <span id="hud-wave" class="stat"><span class="wv-word">Oleada</span><span class="wv-icon" aria-hidden="true">🌊</span> 0</span>
+          <!-- MODO TURBO ⚡ (issue #14): distintivo visible mientras dura una partida
+               turbo. hud.ts solo alterna [hidden] aquí (nunca reescribe el texto),
+               así que el rayo SVG + "Turbo" sobreviven a los renders. -->
+          <span id="hud-turbo" class="stat turbo" title="Modo Turbo ⚡: economía comprimida, mismo reto. Sin récords." hidden><svg class="i" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><path d="M13.2 2.8 5.6 13.6a.6.6 0 0 0 .5 1h4.9l-1.1 6.6a.6.6 0 0 0 1.1.5l7.6-10.8a.6.6 0 0 0-.5-1h-4.9l1.1-6.6a.6.6 0 0 0-1.1-.5Z"/></svg>Turbo</span>
+          <span id="hud-gold" class="stat gold">🪙 0</span>
+          <button id="hud-wood" class="stat wood" title="Madera: tu orco leñador la tala sin parar. Especializar (★) cuesta 🪵45 y el Rango II (★★) 🪵60. Toca para abrir el MERCADO. Atajos: C compra · V vende.">🪵 0</button>
+          <span id="hud-alive" class="stat" hidden>👾 0</span>
+          <!-- ARENA · cuántos siguen en pie. Solo aparece en ese modo; hud.ts
+               alterna [hidden] y reescribe el número. -->
+          <span id="hud-rivals" class="stat" title="Jugadores que siguen en pie" hidden>⚔️ 0</span>
+          <!-- FPS en letra pequeña (opt-in): se muestra/oculta desde Ajustes ⚙.
+               El renderer solo toca su textContent (2 veces/s), nunca el markup. -->
+          <span id="hud-fps" class="stat fps" title="FPS actuales (media móvil)" hidden>— fps</span>
+        </div>
+        <div class="hud-group">
+          <!-- hud.ts solo toca #callwave-timer (innerHTML) y btn.hidden — el prefijo
+               SVG + " ¡Ya! " es texto/markup estático, sobrevive a cada render -->
+          <button id="btn-callwave" class="btn small primary" hidden><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 5 7 7-7 7M14 5l7 7-7 7"/></svg> ¡Ya! <span id="callwave-timer"></span></button>
+          <!-- .blabel: texto legible del botón — visible en escritorio, oculto en
+               móvil por CSS (que en pantalla chica los iconos ya luchan por sitio).
+               Guía/Tienda/Minimapa/Sonido/Ajustes viven SOLO en el menú «⋯» (ver
+               #hamburger-menu): sus botones aquí siguen existiendo y funcionando
+               (hud.ts/main.ts los usan tal cual), solo que el CSS los oculta de esta
+               barra en TODOS los anchos, no solo en móvil apaisado como antes. -->
+          <button id="btn-ping" class="btn small ghost" title="Marcar un punto para tu equipo (ALT+clic, mantener pulsado el mapa, o arma este botón)" aria-label="Ping"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="10.2" r="2.9"/><path d="M12 21S5.2 13.8 5.2 9.4a6.8 6.8 0 0 1 13.6 0C18.8 13.8 12 21 12 21Z"/></svg><span class="blabel">Ping</span></button>
+          <button id="btn-scoreboard" class="btn small ghost" title="Tabla de jugadores: oro, madera, daño y bajas de la partida" aria-haspopup="true" aria-expanded="false" aria-label="Jugadores"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20v-8.5M12 20V4M19 20v-6"/></svg><span class="blabel">Jugadores</span></button>
+          <button id="btn-shop" class="btn small ghost" title="Tienda: items especiales (Sentry para revelar invisibles)" aria-haspopup="true" aria-expanded="false">🛒<span class="blabel">Tienda</span></button>
+          <button id="btn-guide" class="btn small ghost" title="Guía: enemigos, élites y fusiones">📖<span class="blabel">Guía</span></button>
+          <button id="btn-minimap" class="btn small ghost" title="Mostrar/ocultar el minimapa">🗺<span class="blabel">Minimapa</span></button>
+          <button id="btn-speed" class="btn small ghost" hidden>▶ x1</button>
+          <button id="btn-pause" class="btn small ghost" hidden>⏸<span class="blabel">Pausa</span></button>
+          <button id="btn-mute" class="btn small ghost" title="Silenciar todo (efectos y música)"><span id="mute-icon">🔊</span><span class="blabel">Sonido</span></button>
+          <button id="btn-settings" class="btn small ghost" title="Ajustes de sonido" aria-haspopup="true" aria-expanded="false">⚙<span class="blabel">Ajustes</span></button>
+          <!-- botón «⋯»: MISMO botón/lógica que antes tenía la hamburguesa ☰ de
+               móvil apaisado (main.ts ya la abre/cierra y delega en cada botón
+               original vía .click() — código intacto). Ahora es SIEMPRE visible
+               (el CSS deja de esconderlo fuera de ese único breakpoint) y agrupa
+               Tienda/Guía/Minimapa/Sonido/Ajustes: sin tocar TS, el desplegable
+               «gratis» que ya existía se convierte en el menú de esta variante. -->
+          <button id="btn-hamburger" class="btn small ghost hamburger" title="Más opciones: tienda, guía, minimapa, sonido y ajustes" aria-haspopup="true" aria-expanded="false" aria-label="Más opciones"><svg class="i" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg></button>
+        </div>
+      </div>
+
+      <!-- menú desplegable del botón «⋯»: cada botón delega en su equivalente del
+           HUD ($(origId).click()), así el comportamiento sigue viviendo en un
+           único sitio (main.ts, sin tocar). Ping/Jugadores quedan también aquí
+           como acceso alterno (no estorba: el menú nace cerrado). -->
+      <div id="hamburger-menu" class="hamburger-dropdown" hidden role="menu">
+        <button id="hamburger-ping" class="btn ghost" role="menuitem"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="10.2" r="2.9"/><path d="M12 21S5.2 13.8 5.2 9.4a6.8 6.8 0 0 1 13.6 0C18.8 13.8 12 21 12 21Z"/></svg>Ping</button>
+        <button id="hamburger-scoreboard" class="btn ghost" role="menuitem"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20v-8.5M12 20V4M19 20v-6"/></svg>Jugadores</button>
+        <button id="hamburger-shop" class="btn ghost" role="menuitem"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.2 5h2.1l1.4 10.4A2 2 0 0 0 9.7 17h7.6a2 2 0 0 0 2-1.7L20.5 8H6.6"/><circle cx="10" cy="20.3" r="1.3"/><circle cx="17" cy="20.3" r="1.3"/></svg>Tienda</button>
+        <button id="hamburger-guide" class="btn ghost" role="menuitem"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 6.3C10.3 4.8 7.6 4 3.7 4v14.8c3.9 0 6.6.8 8.3 2.3 1.7-1.5 4.4-2.3 8.3-2.3V4c-3.9 0-6.6.8-8.3 2.3Z"/><path d="M12 6.3v14.8"/></svg>Guía</button>
+        <button id="hamburger-minimap" class="btn ghost" role="menuitem"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4.2 3.5 6v13.8L9 18l6 2 5.5-1.8V4.4L15 6.2 9 4.2Z"/><path d="M9 4.2v13.8M15 6.2V20"/></svg>Minimapa</button>
+        <button id="hamburger-mute" class="btn ghost" role="menuitem"><span id="hamburger-mute-icon">🔊</span> Sonido</button>
+        <button id="hamburger-settings" class="btn ghost" role="menuitem"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 4v2.4M12 17.6V20M20 12h-2.4M6.4 12H4M17.3 6.7l-1.7 1.7M8.4 15.6l-1.7 1.7M17.3 17.3l-1.7-1.7M8.4 8.4 6.7 6.7"/></svg>Ajustes</button>
+      </div>
+
+      <div id="settings-panel" hidden role="dialog" aria-label="Ajustes de sonido">
+        <h4>🎚️ Sonido</h4>
+        <label class="set-row">
+          <span>🔊 Efectos</span>
+          <input id="set-sfx" type="range" min="0" max="100" step="1" />
+          <span id="set-sfx-val" class="set-val">80%</span>
+        </label>
+        <label class="set-row">
+          <span>🎵 Música</span>
+          <input id="set-music" type="range" min="0" max="100" step="1" />
+          <span id="set-music-val" class="set-val">60%</span>
+        </label>
+        <!-- calidad de gráficos: Auto ajusta el escalón según los FPS; Alta fija todo;
+             Ligera fija el modo bajo (sin blur, sin viñeta, DPR=1). En Auto, el texto
+             junto a la etiqueta muestra el escalón activo. Persistido por el renderer. -->
+        <div class="set-row set-quality-row">
+          <span>✨ Calidad <small id="set-quality-active" class="set-q-active"></small></span>
+          <div id="set-quality" class="set-quality" role="group" aria-label="Calidad de gráficos">
+            <button type="button" data-quality="auto">Auto</button>
+            <button type="button" data-quality="alta">Alta</button>
+            <button type="button" data-quality="ligera">Ligera</button>
+          </div>
+        </div>
+        <!-- contador de FPS en la barra superior (chip #hud-fps): ver/ocultar -->
+        <div class="set-row set-quality-row">
+          <span>📈 FPS en pantalla</span>
+          <div id="set-fps" class="set-quality" role="group" aria-label="Mostrar FPS en la barra superior">
+            <button type="button" data-fps="1">Ver</button>
+            <button type="button" data-fps="0">Ocultar</button>
+          </div>
+        </div>
+        <!-- continuar en otro dispositivo (issue #6): copia un enlace con el
+             código de sala + el token de reconexión. Solo jugadores (no
+             espectadores/replay: main.ts lo oculta al abrir el panel). -->
+        <button id="btn-continue-device" class="btn ghost small">📱 Continuar en otro dispositivo</button>
+        <!-- abandonar la partida: accesible a TODOS (jugadores no-anfitriones y
+             espectadores) desde ⚙ durante la partida, no solo desde la pausa -->
+        <button id="btn-abandon-settings" class="btn danger small">🚪 Abandonar partida</button>
+      </div>
+
+      <!-- mercado global de madera (se abre tocando el chip 🪵 de la barra) -->
+      <div id="market-panel" hidden role="dialog" aria-label="Mercado de madera">
+        <h4>🪵 Mercado de madera <span class="mkt-tag">global de la sala</span></h4>
+        <div class="mkt-price">1 🪵 = <b id="market-price">2.00</b> 🪙</div>
+        <div class="mkt-row">
+          <button id="market-buy" class="btn small primary">Comprar</button>
+          <button id="market-sell" class="btn small ghost">Vender</button>
+        </div>
+        <p class="set-hint hint">Cada compra SUBE el precio y cada venta lo BAJA — para todos. La venta paga el 85%. Mantén PULSADO para repetir; <b>C</b>/<b>V</b> operan incluso con el panel cerrado.</p>
+        <div class="mkt-orc">
+          <div class="mkt-orc-info">🪓 Tu orco: <b id="orc-level">nv 1</b> · <span id="orc-rate">+0.4🪵/s</span></div>
+          <button id="orc-upgrade" class="btn small ghost">Mejorar</button>
+        </div>
+      </div>
+
+      <!-- tabla de jugadores en vivo (F7.1): oro/madera/daño/bajas + regalar (🎁).
+           REEMPLAZA a los antiguos chips de jugadores: vive fija en la esquina
+           superior izquierda (abierta por defecto en escritorio; 📊 la alterna). -->
+      <div id="scoreboard-panel" hidden role="dialog" aria-label="Tabla de jugadores">
+        <div class="sb-head">
+          <h4>📊 Jugadores</h4>
+          <button id="scoreboard-close" class="btn small ghost" aria-label="Cerrar tabla">✕</button>
+        </div>
+        <div id="scoreboard-body"></div>
+        <div id="scoreboard-give"></div>
+      </div>
+
+      <!-- Tienda de items (Lote 3): se abre con 🛒. Rejilla de items; por ahora el
+           Sentry (revela invisibles). Comprar = entrar en modo colocación. -->
+      <div id="shop-panel" hidden role="dialog" aria-label="Tienda de items">
+        <div class="sb-head">
+          <h4>🛒 Tienda</h4>
+          <button id="shop-close" class="btn small ghost" aria-label="Cerrar tienda">✕</button>
+        </div>
+        <div id="shop-grid"></div>
+      </div>
+
+      <div id="spectator-banner" hidden>👁 Estás mirando — entrarás en la próxima partida</div>
+
+      <div id="hud-preview" hidden>
+        <span class="preview-label">Próxima oleada</span>
+        <span id="hud-preview-tags"></span>
+        <span id="hud-preview-list"></span>
+      </div>
+
+      <div id="hud-placing" hidden></div>
+      <div id="hud-towers"></div>
+      <!-- espectador en móvil (issue #5): la barra de torres (modo sugerencia) se
+           esconde por defecto para no robar media pantalla; este botón flotante
+           la muestra/esconde. Solo existe (vía CSS) por debajo del breakpoint
+           móvil y solo se ve siendo espectador (hud.ts lo controla). -->
+      <button id="btn-towers-toggle" class="btn small ghost" hidden title="Mostrar/ocultar la barra de construcción" aria-label="Mostrar/ocultar la barra de construcción"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 20h15M6.5 20V9.5l5.5-3.8 5.5 3.8V20M10 20v-5.5h4V20"/></svg></button>
+
+      <div id="hud-panel" hidden></div>
+
+      <div id="hud-chat">
+        <div id="game-chat-log" class="chat-log compact"></div>
+        <form id="game-chat-form" class="chat-form" hidden>
+          <input id="game-chat-input" type="text" maxlength="200" placeholder="Mensaje… (Enter)" autocomplete="off" />
+        </form>
+        <button id="btn-chat-toggle" class="btn small ghost">💬</button>
+      </div>
+
+      <div id="place-confirm" hidden>
+        <button id="place-yes" class="place-btn yes" aria-label="Colocar torre">✓</button>
+        <button id="place-no" class="place-btn no" aria-label="Cancelar">✕</button>
+      </div>
+
+      <div id="toasts"></div>
+
+      <!-- barra del reproductor de repeticiones (visible solo en modo replay) -->
+      <div id="replay-bar" hidden>
+        <div id="replay-warn" hidden>⚠️ Repetición de una versión anterior — puede no coincidir.</div>
+        <div class="replay-controls">
+          <button id="replay-play" class="btn small primary" title="Reproducir / Pausar">▶</button>
+          <button id="replay-speed" class="btn small ghost" title="Velocidad">x1</button>
+          <input id="replay-seek" type="range" min="0" max="100" step="1" value="0" />
+          <span id="replay-time" class="replay-time">0:00 / 0:00</span>
+          <button id="replay-exit" class="btn small ghost" title="Salir de la repetición">✕</button>
+        </div>
+      </div>
+
+      <div id="overlay-pause" class="overlay" hidden>
+        <div class="overlay-card panel">
+          <h2>⏸ Pausa</h2>
+          <p id="pause-by"></p>
+          <button id="btn-resume" class="btn primary" hidden>Reanudar</button>
+          <button id="btn-save-pause" class="btn ghost small">💾 Guardar partida</button>
+          <button id="btn-bestiary-pause" class="btn ghost small">📖 Guía</button>
+          <button id="btn-abandon-pause" class="btn danger small">🚪 Abandonar partida</button>
+        </div>
+      </div>
+
+      <div id="overlay-end" class="overlay" hidden>
+        <div class="overlay-card panel wide">
+          <h2 id="end-title"></h2>
+          <p id="end-sub"></p>
+          <div id="end-podium"></div>
+          <div id="end-stats"></div>
+          <div class="end-actions">
+            <button id="btn-watch-replay" class="btn ghost big" hidden>🎬 Ver repetición</button>
+            <button id="btn-save-end" class="btn ghost big" hidden>💾 Guardar partida</button>
+            <button id="btn-back-lobby" class="btn primary big">Volver al lobby</button>
+          </div>
+        </div>
+      </div>
+      <!-- pantalla completa: botón en la esquina inferior derecha (sin atajo de
+           teclado: la 'F' ya es Fijar objetivo en el keymap) -->
+      <button id="btn-fullscreen" class="btn-fullscreen" title="Pantalla completa" aria-label="Pantalla completa"><svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 9V6.8a2.3 2.3 0 0 1 2.3-2.3H9M15 4.5h2.2a2.3 2.3 0 0 1 2.3 2.3V9M19.5 15v2.2a2.3 2.3 0 0 1-2.3 2.3H15M9 19.5H6.8a2.3 2.3 0 0 1-2.3-2.3V15"/></svg></button>
+    </section>
+
+    <div id="overlay-reconnect" class="overlay" hidden>
+      <div class="overlay-card panel"><h2>📡 Reconectando…</h2></div>
+    </div>
+
+    <!-- cuenta regresiva (inicio de partida / reanudación tras pausa) -->
+    <div id="overlay-countdown" class="overlay" hidden>
+      <div class="countdown-box">
+        <p id="countdown-label">¡Empieza en…!</p>
+        <div id="countdown-num">3</div>
+        <!-- solo en la reanudación: el overlay tapa el botón de pausa, así que
+             la vía para arrepentirse vive aquí (manda `pause` al servidor) -->
+        <button id="countdown-cancel" class="btn ghost" hidden>✋ Seguir en pausa</button>
+      </div>
+    </div>
+
+    <!-- ============ GUÍA (desde Home, pausa o el HUD del juego) ============ -->
+    <div id="overlay-bestiary" class="overlay" hidden>
+      <div class="overlay-card panel bestiary-card">
+        <button id="bestiary-close" class="overlay-close" aria-label="Cerrar">✕</button>
+        <h2>📖 Guía</h2>
+        <div class="guide-tabs">
+          <button id="guide-tab-enemies" class="tab active">👾 Enemigos</button>
+          <button id="guide-tab-calendar" class="tab">📅 Calendario</button>
+          <button id="guide-tab-elites" class="tab">👑 Élites y oleadas</button>
+          <button id="guide-tab-towers" class="tab">🏰 Torres</button>
+          <button id="guide-tab-fusions" class="tab">⚗ Fusiones</button>
+          <button id="guide-tab-shortcuts" class="tab">⌨️ Atajos</button>
+        </div>
+        <div id="bestiary-grid" class="bestiary-grid"></div>
+        <div id="guide-calendar" hidden></div>
+        <div id="guide-elites" hidden></div>
+        <div id="guide-towers" hidden></div>
+        <div id="guide-fusions" hidden></div>
+        <div id="guide-shortcuts" hidden></div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>
