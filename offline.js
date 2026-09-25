@@ -128,7 +128,7 @@
       this.paused = false;
       this.isHost = false;
       this.myPlayerId = "p1";
-      this.playerName = localStorage.getItem("td_name") || "Luna";
+      this.playerName = localStorage.getItem("td_name") || "";
 
       let codeFromUrl = "";
       try {
@@ -279,6 +279,9 @@
       }
 
       // If connected to remote server
+      if (msg && (msg.type === "create_room" || msg.type === "join_room") && msg.name) {
+        this.playerName = msg.name;
+      }
       if (this.useRemote && this.remoteWs && this.remoteWs.readyState === 1) {
         this.remoteWs.send(typeof data === "string" ? data : JSON.stringify(data));
         if (msg && msg.type === "cmd" && this.isHost) {
@@ -557,7 +560,7 @@
             difficulty: "normal",
             turbo: false,
             seed: 482910,
-            players: [{ id: "p1", name: "Luna", color: "#38bdf8", door: 0 }],
+            players: [{ id: "p1", name: "Defensor", color: "#38bdf8", door: 0 }],
             closedDoors: [],
             log: [],
             wave: 36,
@@ -569,14 +572,23 @@
     }
   } catch(e) {}
 
-  // Auto-selecionar nome e visibilidade na tela inicial para permitir criar sala imediatamente
+  // Limpiar cualquier residuo de nombre por defecto "Luna"
+  try {
+    if (localStorage.getItem("td_name") === "Luna") {
+      localStorage.removeItem("td_name");
+    }
+  } catch(e) {}
+
+  // Auto-selecionar visibilidade pública na tela inicial
   function ensureReadyToPlay() {
     const nameInput = document.getElementById("home-name");
     if (nameInput) {
-      if (!nameInput.value || !nameInput.value.trim()) {
-        const stored = localStorage.getItem("td_name");
-        nameInput.value = stored || "Luna";
-        nameInput.dispatchEvent(new Event("input", { bubbles: true }));
+      if (nameInput.value === "Luna") {
+        nameInput.value = "";
+      }
+      const stored = localStorage.getItem("td_name");
+      if (stored && stored !== "Luna") {
+        nameInput.value = stored;
       }
     }
 
