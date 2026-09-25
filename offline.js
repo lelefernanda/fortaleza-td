@@ -95,10 +95,10 @@
         if (res.ok) return res;
       } catch (e) {}
       return new Response(JSON.stringify([
-        { name: "Luna", rating: 1420, wins: 18, losses: 2 },
-        { name: "Carlos", rating: 1280, wins: 14, losses: 5 },
-        { name: "Vicente", rating: 1150, wins: 10, losses: 4 },
-        { name: "Mariana", rating: 1040, wins: 8, losses: 6 }
+        { rank: 1, name: "Luna", badge: { tier: 5, label: "Maestro" }, games: "24 partidas" },
+        { rank: 2, name: "Carlos", badge: { tier: 4, label: "Diamante" }, games: "19 partidas" },
+        { rank: 3, name: "Vicente", badge: { tier: 3, label: "Oro" }, games: "15 partidas" },
+        { rank: 4, name: "Mariana", badge: { tier: 2, label: "Plata" }, games: "12 partidas" }
       ]), {
         status: 200,
         headers: { "content-type": "application/json" }
