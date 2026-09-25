@@ -48,6 +48,11 @@
     // Crear sala desde guardado
     if (urlStr.includes("/api/rooms/from-save")) {
       try {
+        if (options && options.body) {
+          window.__lastSave = JSON.parse(options.body);
+        }
+      } catch {}
+      try {
         const res = await origFetch(`${REMOTE_HTTP}/api/rooms/from-save`, options);
         if (res.ok) return res;
       } catch (e) {
@@ -244,6 +249,7 @@
       // Interceptar solicitação de salvar partida localmente
       if (msg && msg.type === "save_request") {
         if (this.engine) {
+          const playerList = (this.engine.init && this.engine.init.players) || [{ id: "p1", name: this.playerName, color: "#38bdf8", door: 0 }];
           const saveObject = {
             kind: "fortaleza-save",
             v: 21,
@@ -255,7 +261,13 @@
             wave: (this.engine.state && this.engine.state.wave) || 0,
             salt: msg.salt || "fortaleza",
             closedDoors: (this.engine.init && this.engine.init.closedDoors) || [],
-            players: (this.engine.init && this.engine.init.players) || [{ id: "p1", name: this.playerName, color: "#38bdf8", door: 0 }],
+            players: playerList,
+            slots: playerList.map(p => ({
+              id: p.id,
+              name: p.name,
+              color: p.color || "#38bdf8",
+              tokenHash: "token-" + (p.id || "p1")
+            })),
             log: this.log || []
           };
           this.emit({ type: "save_info", save: saveObject });
@@ -312,15 +324,17 @@
         }
         case "start_game": {
           this.emit({ type: "countdown", seconds: 0, kind: "start" });
+          const saved = window.__lastSave || null;
           const init = {
-            mapId: (this.settings && this.settings.mapId) || "sendero",
-            mode: (this.settings && this.settings.mode) || "classic",
-            difficulty: (this.settings && this.settings.difficulty) || "normal",
+            mapId: (this.settings && this.settings.mapId) || saved?.mapId || "sendero",
+            mode: (this.settings && this.settings.mode) || saved?.mode || "classic",
+            difficulty: (this.settings && this.settings.difficulty) || saved?.difficulty || "normal",
             turbo: (this.settings && this.settings.turbo) || false,
-            seed: Math.floor(Math.random() * 1000000),
+            seed: saved?.seed || Math.floor(Math.random() * 1000000),
             players: [{ id: "p1", name: this.playerName, color: "#38bdf8", door: this.door || 0 }],
             youAre: "p1",
-            closedDoors: (this.settings && this.settings.closedDoors) || []
+            closedDoors: (this.settings && this.settings.closedDoors) || saved?.closedDoors || [],
+            saved: saved
           };
           this.emit({ type: "game_started", init });
           this.startSimulation(init);
@@ -354,6 +368,12 @@
     }
 
     emitLocalLobby() {
+      const saved = window.__lastSave || null;
+      if (saved && Array.isArray(saved.slots)) {
+        saved.slots.forEach(s => {
+          if (!s.claimedBy) s.claimedBy = "p1";
+        });
+      }
       this.emit({
         type: "lobby_state",
         players: [{
@@ -365,9 +385,9 @@
           ready: true
         }],
         spectators: [],
-        settings: this.settings || { mapId: "sendero", mode: "classic", difficulty: "normal" },
+        settings: this.settings || (saved ? { mapId: saved.mapId, mode: saved.mode, difficulty: saved.difficulty } : { mapId: "sendero", mode: "classic", difficulty: "normal" }),
         inGame: false,
-        saved: null
+        saved: saved
       });
     }
 
